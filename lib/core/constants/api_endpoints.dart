@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
   // Update port if your json-server or backend runs on a different one.
-  static const String baseUrl = 'http://10.124.97.169:3000';
+  static const String baseUrl = 'https://aroma-1.onrender.com';
 
   static const String ingredients = '$baseUrl/ingredients';
   static const String recipes = '$baseUrl/recipes';
