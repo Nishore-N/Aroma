@@ -15,6 +15,8 @@ class RecipeListScreen extends StatefulWidget {
 class _RecipeListScreenState extends State<RecipeListScreen> {
   final ApiClient _apiClient = ApiClient();
   final List<_RecipeData> _allRecipes = <_RecipeData>[];
+  bool _isLoading = true;
+  bool _hasError = false;
 
   int _visibleCount = 3;
   final Set<int> _likedIndices = {};
@@ -40,9 +42,19 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
   }
 
   Future<void> _fetchRecipes() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+      _allRecipes.clear();
+    });
+
     try {
       final List<dynamic> list =
           await _apiClient.getList(ApiEndpoints.recipes);
+
+      if (!mounted) return;
 
       final recipes = list.whereType<Map<String, dynamic>>().map((json) {
         final dynamic rawCookTime = json['cookTime'];
@@ -63,16 +75,21 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
         );
       }).toList();
 
+      if (!mounted) return;
+
       setState(() {
-        _allRecipes
-          ..clear()
-          ..addAll(recipes);
+        _allRecipes.addAll(recipes);
         _visibleCount = _allRecipes.isEmpty
             ? 0
             : (_allRecipes.length >= 3 ? 3 : _allRecipes.length);
+        _isLoading = false;
       });
-    } catch (_) {
-      // For now, ignore errors to avoid UI changes; list will stay empty.
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
     }
   }
 
@@ -109,7 +126,7 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
           // ===========================
           SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 140),
+            padding: const EdgeInsets.fromLTRB(18, 30, 18, 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -139,14 +156,122 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
 
                 const SizedBox(height: 28),
 
-                for (int i = 0; i < _visibleCount; i++) ...[
-                  _RecipeCard(
-                    data: _allRecipes[i],
-                    isLiked: _likedIndices.contains(i),
-                    onToggleLike: () => _toggleLike(i),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 60.0),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 30,
+                            height: 30,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6A45)),
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Finding delicious recipes...',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_hasError)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Failed to load recipes',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Please check your internet connection and try again',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _fetchRecipes,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6A45),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_allRecipes.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.search_off_rounded, size: 48, color: Colors.orangeAccent),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No recipes found',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Please check your preferences and try again',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6A45),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Adjust Preferences', style: TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  for (int i = 0; i < _visibleCount && i < _allRecipes.length; i++) ...[
+                    _RecipeCard(
+                      data: _allRecipes[i],
+                      isLiked: _likedIndices.contains(i),
+                      onToggleLike: () => _toggleLike(i),
+                    ),
+                    const SizedBox(height: 30),
+                  ],
 
                 const SizedBox(height: 6),
 

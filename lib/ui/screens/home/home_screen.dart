@@ -237,8 +237,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 mainAxisSpacing: 12,
                                 crossAxisSpacing: 12,
                                 childCount: previewCount,
-                                itemBuilder:
-                                    (BuildContext context, int index) {
+                                itemBuilder: (BuildContext context, int index) {
+                                  // Safely get the recipe or return an empty container if index is invalid
+                                  if (index >= provider.recipes.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
                                   final recipe = provider.recipes[index];
                                   final bool isLarge = index.isEven;
                                   final bool isPreview = index >= _visibleRecipeCount;
