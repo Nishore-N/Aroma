@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
-  // Local development server - use 10.0.2.2 for Android emulator
-  // For physical device testing, replace with your computer's local IP
+  
   static const String baseUrl = 'https://aroma-1.onrender.com';
 
   static const String ingredients = '$baseUrl/ingredients';

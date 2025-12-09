@@ -156,8 +156,14 @@ class _CookingPreferenceScreenState extends State<CookingPreferenceScreen> {
 
   /// ----- Expandable Section -----
   Widget _buildSection(String title, List<String> items) {
+    // Skip rendering if no items are available
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
     final isExpanded = _expanded[title] ?? false;
     final visibleItems = isExpanded ? items : items.take(4).toList();
+    final selectedItem = _selectedPerSection[title] ?? '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
@@ -171,23 +177,27 @@ class _CookingPreferenceScreenState extends State<CookingPreferenceScreen> {
             spacing: 10,
             runSpacing: 10,
             children: visibleItems
-                .map((item) => _chip(title, item, item == _selectedPerSection[title]))
+                .map((item) => _chip(
+                      title,
+                      item,
+                      item == selectedItem,
+                    ))
                 .toList(),
           ),
 
-          const SizedBox(height: 6),
-
-          GestureDetector(
-            onTap: () => setState(() => _expanded[title] = !isExpanded),
-            child: Text(
-              isExpanded ? "View Less" : "View More",
-              style: const TextStyle(
-                color: Color(0xFFFF6A45),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+          // Only show View More if there are more than 4 items
+          if (items.length > 4)
+            GestureDetector(
+              onTap: () => setState(() => _expanded[title] = !isExpanded),
+              child: Text(
+                isExpanded ? "View Less" : "View More",
+                style: const TextStyle(
+                  color: Color(0xFFFF6A45),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
